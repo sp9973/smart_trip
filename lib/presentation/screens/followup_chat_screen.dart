@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-// 📁 lib/presentation/screens/follow_up_chat_screen.dart
+import 'package:smart_trip_plannner/presentation/screens/itinerary_screen.dart';
+import 'package:smart_trip_plannner/services/gemini_service.dart';
 
 class FollowUpChatScreen extends ConsumerStatefulWidget {
   final String itineraryText;
@@ -14,7 +14,6 @@ class FollowUpChatScreen extends ConsumerStatefulWidget {
 
 class _FollowUpChatScreenState extends ConsumerState<FollowUpChatScreen> {
   final TextEditingController _controller = TextEditingController();
-
   String? response;
 
   @override
@@ -54,11 +53,23 @@ class _FollowUpChatScreenState extends ConsumerState<FollowUpChatScreen> {
             const SizedBox(height: 10),
             ElevatedButton.icon(
               onPressed: () async {
-                // TODO: Call your Gemini function here
-                // For now, simulate response
-                setState(() {
-                  response = "AI response: ✅ Your itinerary has been refined.";
-                });
+                final geminiService = GeminiService();
+                try {
+                  final result = await geminiService.generateItinerary(
+                    "Based on this itinerary: ${widget.itineraryText}\n\nUser request: ${_controller.text}",
+                  );
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ItineraryScreen(data: result),
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text("❌ Error: $e")));
+                }
               },
               icon: const Icon(Icons.send),
               label: const Text("Refine"),
@@ -68,13 +79,15 @@ class _FollowUpChatScreenState extends ConsumerState<FollowUpChatScreen> {
               ),
             ),
             const SizedBox(height: 16),
+
+            // Optionally show response text (not used in this flow, can be removed or used for debug)
             if (response != null) ...[
               const Text(
                 "Response",
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Text(response!),
+              SingleChildScrollView(child: Text(response!)),
             ],
           ],
         ),

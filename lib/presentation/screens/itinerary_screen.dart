@@ -22,10 +22,52 @@ class ItineraryScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _launchDirections(String destination) async {
+    final encodedDestination = Uri.encodeComponent(destination);
+    final uri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$encodedDestination&travelmode=driving',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      throw 'Could not launch directions to $destination';
+    }
+  }
+
+  void _showLocationOptions(BuildContext context, String placeName) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder:
+          (context) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.map),
+                title: const Text("View on Map"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _launchMap(placeName);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.directions),
+                title: const Text("Get Directions"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _launchDirections(placeName);
+                },
+              ),
+            ],
+          ),
+    );
+  }
+
   String _generateSummaryTitle(Map<String, dynamic> data, DateTime now) {
     final firstDay = data.keys.first;
     final activities = data[firstDay]['activities'] as List<dynamic>;
-
     if (activities.isNotEmpty) {
       final firstActivity = activities.first;
       final location = firstActivity['title'] ?? 'Trip';
@@ -71,7 +113,6 @@ class ItineraryScreen extends ConsumerWidget {
 
   String _formatItinerary(Map<String, dynamic> data) {
     final buffer = StringBuffer();
-
     data.forEach((day, info) {
       buffer.writeln('$day:');
       final activities = info['activities'] as List;
@@ -80,9 +121,8 @@ class ItineraryScreen extends ConsumerWidget {
         final time = activity['time'] ?? '';
         buffer.writeln('• $time - $title');
       }
-      buffer.writeln(); // newline between days
+      buffer.writeln();
     });
-
     return buffer.toString().trim();
   }
 
@@ -91,113 +131,157 @@ class ItineraryScreen extends ConsumerWidget {
     final days = data.entries.toList();
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F8F7),
       appBar: AppBar(
         title: const Text("Itinerary Created 🌴"),
         leading: BackButton(onPressed: () => context.go('/chat')),
         backgroundColor: const Color(0xFF00794E),
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                itemCount: days.length,
-                itemBuilder: (context, index) {
-                  final dayLabel = days[index].key;
-                  final dayData = days[index].value;
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ListView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      itemCount: days.length,
+                      itemBuilder: (context, index) {
+                        final dayLabel = days[index].key;
+                        final dayData = days[index].value;
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        dayLabel,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      ...List<Widget>.from(
-                        (dayData['activities'] as List).map((activity) {
-                          final title = activity['title'] ?? 'Unknown Place';
-                          final time = activity['time'] ?? '';
-                          return ListTile(
-                            leading: const Icon(Icons.circle, size: 13),
-                            title: Text(title),
-                            subtitle: Text(time),
-                            onTap: () => _launchMap(title),
-                          );
-                        }),
-                      ),
-                      const Divider(thickness: 1.5, color: Colors.green),
-                      const SizedBox(height: 12),
-                    ],
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                dayLabel,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF00794E),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ...List<Widget>.from(
+                                (dayData['activities'] as List).map((activity) {
+                                  final title =
+                                      activity['title'] ?? 'Unknown Place';
+                                  final time = activity['time'] ?? '';
+                                  return ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: const Icon(
+                                      Icons.place,
+                                      size: 20,
+                                      color: Colors.green,
+                                    ),
+                                    title: Text(title),
+                                    subtitle: Text(time),
+                                    onTap:
+                                        () => _showLocationOptions(
+                                          context,
+                                          title,
+                                        ),
+                                  );
+                                }),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
 
-            // Map Footer
-            Container(
-              padding: const EdgeInsets.all(12),
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF4F4F4),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  GestureDetector(
-                    onTap: () => _launchMap('Ubud Bali'),
-                    child: const Text(
-                      "📍 Open example location in maps",
-                      style: TextStyle(
-                        color: Colors.blue,
-                        decoration: TextDecoration.underline,
+                    // Flight section
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(top: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFFDF3),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFB4E1C3)),
+                      ),
+                      child: Column(
+                        children: [
+                          GestureDetector(
+                            onTap: () => _launchMap('Delhi'),
+                            child: const Text(
+                              "📍 Open example location in maps",
+                              style: TextStyle(
+                                color: Colors.blue,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            "Search for your Destination",
+                            style: TextStyle(color: Colors.black54),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    "Mumbai to Bali, Indonesia | 11hrs 5mins",
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
 
-            // Follow-up Button
-            ElevatedButton.icon(
-              onPressed: () {
-                final itineraryText = _formatItinerary(data);
-                context.push('/follow-up', extra: itineraryText);
-              },
-              icon: const Icon(Icons.chat_bubble_outline),
-              label: const Text("Follow up to refine"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00794E),
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(48),
-              ),
-            ),
-            const SizedBox(height: 10),
+                    const SizedBox(height: 20),
 
-            // Save Button
-            ElevatedButton.icon(
-              onPressed: () => _saveOffline(context, ref),
-              icon: const Icon(Icons.save_alt),
-              label: const Text("Save Offline"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[300],
-                foregroundColor: Colors.black54,
-                minimumSize: const Size.fromHeight(48),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        final itineraryText = _formatItinerary(data);
+                        context.push('/follow-up', extra: itineraryText);
+                      },
+                      icon: const Icon(Icons.chat_bubble_outline),
+                      label: const Text("Follow up to refine"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00794E),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    ElevatedButton.icon(
+                      onPressed: () => _saveOffline(context, ref),
+                      icon: const Icon(Icons.save_alt),
+                      label: const Text("Save Offline"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[300],
+                        foregroundColor: Colors.black87,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 30),
+                  ],
+                ),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
