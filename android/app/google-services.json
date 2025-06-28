@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "412110038178",
+    "project_id": "smart-trip-70c6c",
+    "storage_bucket": "smart-trip-70c6c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:412110038178:android:eb37c0c579e3e11668e3fb",
+        "android_client_info": {
+          "package_name": "com.example.smart_trip_plannner"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "412110038178-49cp9dshgjpl16dl8pjm7oh8jlpm5ep8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.smart_trip_plannner",
+            "certificate_hash": "aa518738fd98f5279971e3b02e9b11e641825e35"
+          }
+        },
+        {
+          "client_id": "412110038178-gmkd1j2koi873ak8utqrms8kqltip385.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYB7WB7tbWT9Oy9ITm997ywyenRjEwE2A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "412110038178-gmkd1j2koi873ak8utqrms8kqltip385.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
